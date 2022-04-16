@@ -1,0 +1,47 @@
+version: '3'
+
+services:
+  api-dev:
+    build: ./api
+    depends_on:
+      - postgres
+    command:
+      - /bin/bash
+      - -c
+      - |
+        flask run --host=0.0.0.0
+
+    environment:
+      # NOTE: DO NOT USE THIS IN PRODUCTION!!!
+      - FLASK_APP=app
+      - FLASK_DEBUG=1
+      - FLASK_ENV=development
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./api/:/home/flask/app/api
+
+  ui-dev:
+    build: ./ui
+    depends_on:
+      - api-dev
+    # NOTE: DO NOT USE THIS IN PRODUCTION!!!
+    command: yarn dev
+    environment:
+      - API_URI=${APP_API_URI:-http://localhost:5000}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./ui/:/home/ui/
+
+  postgres:
+    restart: always
+    image: postgres:14.2-alpine3.15
+    environment:
+      - POSTGRES_USER=development-only
+      - POSTGRES_PASSWORD=development-only
+      - POSTGRES_DB=momento-api
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    expose:
+      - 5432
