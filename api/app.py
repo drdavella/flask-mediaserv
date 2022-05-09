@@ -82,3 +82,24 @@ def register():
     db.session.add(user)
     db.session.commit()
     return {"success": True, "message": "User created"}
+
+
+@app.route("/api/albums/", methods=["GET"])
+def albums():
+    app.logger.debug("albums")
+    return {
+        "albums": [
+            {
+                "name": "Whatever",
+                "artist": "The Foos",
+            },
+            {
+                "name": "Something Else",
+                "artist": "The Bars",
+            },
+            {
+                "name": "Sgt Peppers",
+                "artist": "The Beatles",
+            },
+        ]
+    }
