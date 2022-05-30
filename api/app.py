@@ -1,8 +1,10 @@
 from os import environ
 import socket
+from time import sleep
 
 from flask import Flask, request
 from flask_cors import CORS
+from flask_sock import Sock
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -17,6 +19,8 @@ db_uri = f"postgresql://{db_username}:{db_password}@postgres/momento-api"
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+sock = Sock(app)
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -103,3 +107,15 @@ def albums():
             },
         ]
     }
+
+
+@sock.route("/api/playback/status/")
+def playback_status(ws):
+    app.logger.debug("websocket: status")
+
+    tick = 0
+    while True:
+        app.logger.debug("websocket tick: %d", tick)
+        ws.send(tick)
+        tick += 1
+        sleep(1)

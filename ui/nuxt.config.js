@@ -73,6 +73,7 @@ export default {
   },
 
   env: {
-    apiUri: process.env.API_URI || 'http://localhost:5000/'
+    apiUri: process.env.API_URI || 'http://localhost:5000/',
+    websocketUri: process.env.WEBSOCKET_URI || 'wss://localhost:5000/'
   }
 }
