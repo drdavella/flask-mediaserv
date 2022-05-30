@@ -1,4 +1,5 @@
-from os import environ
+import os
+from os import environ, listdir
 import socket
 from time import sleep
 
@@ -19,6 +20,7 @@ db_uri = f"postgresql://{db_username}:{db_password}@postgres/momento-api"
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["DATA_PATH"] = environ.get("MEDIASERV_DATA_PATH", "/data/music")
 
 sock = Sock(app)
 
@@ -107,6 +109,25 @@ def albums():
             },
         ]
     }
+
+
+@app.route("/api/files/", methods=["GET"])
+def files():
+    data_path = app.config.get("DATA_PATH")
+    files = listdir(data_path)
+
+    result = {"files": []}
+    for f in files:
+        is_directory = os.path.isdir(os.path.join(data_path, f))
+        result["files"].append(
+            {
+                "filename": f,
+                "is_directory": is_directory,
+                "path": "/",
+            }
+        )
+
+    return result
 
 
 @sock.route("/api/playback/status/")
