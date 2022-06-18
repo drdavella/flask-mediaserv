@@ -114,16 +114,46 @@ def albums():
 @app.route("/api/files/", methods=["GET"])
 def files():
     data_path = app.config.get("DATA_PATH")
-    files = listdir(data_path)
+    directory = request.args.get("directory", "")
+    list_path = os.path.join(data_path, directory)
+    safe_path = (
+        os.path.sep + os.path.relpath(list_path, data_path)
+        if directory
+        else os.path.sep
+    )
+    app.logger.debug("File path requested: %s", list_path)
 
-    result = {"files": []}
+    if not os.path.exists(list_path):
+        app.logger.debug("Requested file directory not found: %s", list_path)
+        return {"message": "No such file/directory"}, 404  # TODO: is this right?
+
+    # Prevent path traversal outside the data directory tree
+    if os.path.commonpath([data_path, list_path]) != os.path.abspath(data_path):
+        return {"message": directory}, 403
+
+    if os.path.isfile(list_path):
+        basename = os.path.basename(list_path)
+        return {
+            "files": [
+                {
+                    "name": basename.replace("-", " ").replace("_", " "),
+                    "full_path": os.path.sep + os.path.relpath(list_path, data_path),
+                    "is_directory": False,
+                },
+            ],
+            "directory": os.path.dirname(safe_path),
+        }
+
+    files = listdir(list_path)
+
+    result = {"files": [], "directory": safe_path}
     for f in files:
-        is_directory = os.path.isdir(os.path.join(data_path, f))
+        full_path = os.path.join(list_path, f)
         result["files"].append(
             {
-                "filename": f,
-                "is_directory": is_directory,
-                "path": "/",
+                "name": f.replace("-", " ").replace("_", " "),
+                "full_path": os.path.join(safe_path, f),
+                "is_directory": os.path.isdir(full_path),
             }
         )
 
