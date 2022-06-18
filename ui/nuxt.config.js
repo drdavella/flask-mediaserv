@@ -41,6 +41,7 @@ export default {
     // https://go.nuxtjs.dev/bootstrap
     'bootstrap-vue/nuxt',
     'nuxt-buefy',
+    '@nuxtjs/vuetify',
     '@nuxtjs/axios',
     '@nuxtjs/auth-next'
   ],
@@ -62,6 +63,10 @@ export default {
 
   axios: {
     proxy: true
+  },
+
+  vuetify: {
+    defaultAssets: { icons: 'fa' }
   },
 
   proxy: {
