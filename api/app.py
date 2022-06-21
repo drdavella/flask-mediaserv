@@ -7,15 +7,21 @@ from flask import Flask, request
 from flask_cors import CORS
 from flask_sock import Sock
 
-from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy_utils import EmailType, PasswordType
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-db_username = environ.get("DB_USERNAME", "development-only")
-db_password = environ.get("DB_PASSWORD", "development-only")
-db_uri = f"postgresql://{db_username}:{db_password}@postgres/momento-api"
+from models.db import db
+from blueprints.api import api
+
+if False:
+    # For MySQL
+    db_username = environ.get("DB_USERNAME", "development-only")
+    db_password = environ.get("DB_PASSWORD", "development-only")
+    db_uri = f"postgresql://{db_username}:{db_password}@postgres/momento-api"
+else:
+    db_uri = "sqlite:////var/lib/sqlite/data/mediaserv.db"
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
@@ -24,24 +30,14 @@ app.config["DATA_PATH"] = environ.get("MEDIASERV_DATA_PATH", "/data/music")
 
 sock = Sock(app)
 
-db = SQLAlchemy(app)
+db.init_app(app)
 migrate = Migrate(app, db)
 
 FRONTEND = r"https?://" + socket.gethostname() + ":3000"
 CORS(app, resources={r"/api/*": {"origins": FRONTEND}})
 
 
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(128), nullable=False)
-    email = db.Column(db.String, nullable=False)
-    password = db.Column(db.String, nullable=False)
-
-    def set_password(self, password):
-        self.password = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password, password)
+app.register_blueprint(api)
 
 
 @app.route("/api/search/<term>", methods=["GET"])
@@ -109,55 +105,6 @@ def albums():
             },
         ]
     }
-
-
-@app.route("/api/files/", methods=["GET"])
-def files():
-    data_path = app.config.get("DATA_PATH")
-    directory = request.args.get("directory", "")
-    list_path = os.path.join(data_path, directory)
-    safe_path = (
-        os.path.sep + os.path.relpath(list_path, data_path)
-        if directory
-        else os.path.sep
-    )
-    app.logger.debug("File path requested: %s", list_path)
-
-    if not os.path.exists(list_path):
-        app.logger.debug("Requested file directory not found: %s", list_path)
-        return {"message": "No such file/directory"}, 404  # TODO: is this right?
-
-    # Prevent path traversal outside the data directory tree
-    if os.path.commonpath([data_path, list_path]) != os.path.abspath(data_path):
-        return {"message": directory}, 403
-
-    if os.path.isfile(list_path):
-        basename = os.path.basename(list_path)
-        return {
-            "files": [
-                {
-                    "name": basename.replace("-", " ").replace("_", " "),
-                    "full_path": os.path.sep + os.path.relpath(list_path, data_path),
-                    "is_directory": False,
-                },
-            ],
-            "directory": os.path.dirname(safe_path),
-        }
-
-    files = listdir(list_path)
-
-    result = {"files": [], "directory": safe_path}
-    for f in files:
-        full_path = os.path.join(list_path, f)
-        result["files"].append(
-            {
-                "name": f.replace("-", " ").replace("_", " "),
-                "full_path": os.path.join(safe_path, f),
-                "is_directory": os.path.isdir(full_path),
-            }
-        )
-
-    return result
 
 
 @sock.route("/api/playback/status/")

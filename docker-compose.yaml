@@ -3,8 +3,8 @@ version: '3'
 services:
   api-dev:
     build: ./api
-    depends_on:
-      - postgres
+    #depends_on:
+    #  - postgres
     command:
       - /bin/bash
       - -c
@@ -21,6 +21,7 @@ services:
     volumes:
       - ./api/:/home/flask/app/api
       - ${MEDIASERV_DATA_PATH}:/data/music
+      - ./sqlite-db:/var/lib/sqlite/data
 
   ui-dev:
     build: ./ui
