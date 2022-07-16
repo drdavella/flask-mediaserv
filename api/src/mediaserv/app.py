@@ -12,8 +12,8 @@ from sqlalchemy_utils import EmailType, PasswordType
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from models.db import db
-from blueprints.api import api
+from .models.db import db
+from .blueprints.api import api
 
 if False:
     # For MySQL

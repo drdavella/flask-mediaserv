@@ -2,6 +2,8 @@ import os
 
 from flask import Blueprint, current_app, request
 
+from ..models.album import Album
+
 files = Blueprint("files", __name__, url_prefix="/files")
 
 
@@ -52,3 +54,8 @@ def get_files():
         )
 
     return result
+
+
+@files.route("/scan", methods=["POST"])
+def scan_directory():
+    return {}

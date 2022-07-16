@@ -9,13 +9,18 @@ services:
       - /bin/bash
       - -c
       - |
+        # TODO: Workaround until setuptools implements PEP-660
+        touch setup.cfg
+        pip install -e .
+        rm -f setup.cfg
         flask run --host=0.0.0.0
 
     environment:
       # NOTE: DO NOT USE THIS IN PRODUCTION!!!
-      - FLASK_APP=app
+      - FLASK_APP=mediaserv.app:app
       - FLASK_DEBUG=1
       - FLASK_ENV=development
+      - PYTHONPATH=/home/flask/.local/lib/python3.9/
     ports:
       - "5000:5000"
     volumes:
