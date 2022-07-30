@@ -1,17 +1,11 @@
 import os
-from collections import defaultdict
 from pathlib import Path
 
-import audio_metadata as am
 from flask import Blueprint, current_app, request
 
-from ..models.db import db
-from ..models.album import Album
-from ..models.scans import Scan
+from ..mediaserv.scanner import start_scan_directory
 
 files = Blueprint("files", __name__, url_prefix="/files")
-
-EXTENSIONS_TO_SKIP = ['.png', '.jpg']
 
 
 @files.route("/", methods=["GET"])
@@ -66,38 +60,10 @@ def get_files():
 
 @files.route("/scan", methods=["POST"])
 def scan_directory():
-    data_path = Path(current_app.config.get("DATA_PATH"))
     directory = Path(request.args.get("directory", ""))
-    list_path = data_path / directory
-    current_app.logger.debug("list path: %s", list_path)
+    job_id = start_scan_directory(directory)
+    return {"job_id": job_id}
 
-    job_id = Scan.record_scan(directory)
-
-    # TODO: refactor into separate library module
-    albums = defaultdict(list)
-    for filename in list_path.rglob("*"):
-        if os.path.isdir(filename):
-            continue
-
-        # TODO: record image filenames with associated directories/albums
-        if filename.suffix in EXTENSIONS_TO_SKIP:
-            current_app.logger.debug("Skipping file because of extension: %s", filename)
-            continue
-
-        try:
-            meta = am.load(filename)
-        except am.exceptions.UnsupportedFormat as e:
-            current_app.logger.debug("%s: (filename=%s)", e, filename)
-            continue
-
-        if album_name := meta.tags.album[0]:
-            albums[album_name].append((filename, meta))
-
-    for album_name, tracks in albums.items():
-        for filename, meta in tracks:
-            pass
-
-    return {'job_id': job_id}
 
 @files.route("/scan/status", methods=["GET"])
 def scan_status():
