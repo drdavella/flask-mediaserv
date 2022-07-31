@@ -6,24 +6,34 @@ from threading import Thread
 import audio_metadata as am
 from flask import current_app, copy_current_request_context
 
-from ..models import db
+from ..models.db import db
 from ..models.scan import Scan
+from ..models.album import Album
+from ..models.track import Track
 
 
-IMAGE_EXTENSIONS = [".png", ".jpg"]
+IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg"]
+IGNORE_EXTENSIONS = [".pdf"]
 
 
 def run_scan(directory: Path, job_id: str, current_app):
     current_app.logger.debug("beginning path: %s (job_id=%s)", directory, job_id)
 
     albums = defaultdict(list)
+    images = defaultdict(list)
+
+    # TODO: this loop can be parallelized
     for filename in directory.rglob("*"):
         if os.path.isdir(filename):
             continue
 
-        # TODO: record image filenames with associated directories/albums
         if filename.suffix in IMAGE_EXTENSIONS:
-            current_app.logger.debug("Skipping file because of extension: %s", filename)
+            current_app.logger.debug("Detected image file: %s", filename)
+            images[directory].append(filename)
+            continue
+
+        if filename.suffix in IGNORE_EXTENSIONS:
+            current_app.logger.debug("Ignoring file with unsupported extension: %s", filename)
             continue
 
         try:
@@ -36,8 +46,14 @@ def run_scan(directory: Path, job_id: str, current_app):
             albums[album_name].append((filename, meta))
 
     for album_name, tracks in albums.items():
+        current_app.logger.debug('album: %s', album_name)
+        album = Album(name=album_name)
+        db.session.add(album)
         for filename, meta in tracks:
-            pass
+            title = meta.tags.title[0]
+            track = Track(title=title, uri=filename.as_uri(), album=album)
+            db.session.add(track)
+        db.session.commit()
 
     Scan.mark_finished(job_id)
     current_app.logger.info("Scan complete: %s (job_id=%s)", directory, job_id)
