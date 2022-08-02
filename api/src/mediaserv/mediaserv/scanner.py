@@ -49,10 +49,21 @@ def run_scan(directory: Path, job_id: str, current_app):
         current_app.logger.debug('album: %s', album_name)
         album = Album(name=album_name)
         db.session.add(album)
+        album_discs = set()
         for filename, meta in tracks:
-            title = meta.tags.title[0]
-            track = Track(title=title, uri=filename.as_uri(), album=album)
+            disc_number = meta.tags.get('discnumber', [1])[0]
+            album_discs.add(disc_number)
+            track_meta = dict(
+                title=meta.tags.title[0],
+                disc_number=disc_number,
+                track_number=meta.tags.tracknumber[0],
+                uri=filename.as_uri(),
+                # TODO: handle other encodings
+                encoding='flac',
+            )
+            track = Track(album=album, **track_meta)
             db.session.add(track)
+        album.num_discs = len(album_discs)
         db.session.commit()
 
     Scan.mark_finished(job_id)
