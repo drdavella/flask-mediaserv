@@ -6,8 +6,7 @@ class Album(db.Model):
     name = db.Column(db.String, nullable=False)
     num_discs = db.Column(db.Integer, nullable=False, default=1)
 
-    # album_artist
-    # date?
+    year = db.Column(db.String)
 
     # Do we want to collect all composers/artists/genres here as well?
 

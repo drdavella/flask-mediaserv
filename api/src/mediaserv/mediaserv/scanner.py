@@ -6,10 +6,7 @@ from threading import Thread
 import audio_metadata as am
 from flask import current_app, copy_current_request_context
 
-from ..models.db import db
-from ..models.scan import Scan
-from ..models.album import Album
-from ..models.track import Track
+from ..models import Album, Artist, Track, Scan, db
 
 
 IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg"]
@@ -53,6 +50,9 @@ def run_scan(directory: Path, job_id: str, current_app):
         for filename, meta in tracks:
             disc_number = meta.tags.get('discnumber', [1])[0]
             album_discs.add(disc_number)
+            if (not album.year) and (year := meta.tags.get('date', [])):
+                album.year = year[0]
+
             track_meta = dict(
                 title=meta.tags.title[0],
                 disc_number=disc_number,
