@@ -1,7 +1,15 @@
+from dataclasses import dataclass
+
 from .db import db
 
 
+@dataclass
 class Album(db.Model):
+    id: str
+    name: str
+    num_discs: int
+    year: str
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
     num_discs = db.Column(db.Integer, nullable=False, default=1)

@@ -3,7 +3,7 @@ from os import environ, listdir
 import socket
 from time import sleep
 
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_sock import Sock
 
@@ -12,7 +12,7 @@ from sqlalchemy_utils import EmailType, PasswordType
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .models.db import db
+from .models import Album, db
 from .blueprints.api import api
 
 if False:
@@ -31,7 +31,7 @@ app.config["DATA_PATH"] = environ.get("MEDIASERV_DATA_PATH", "/data/music")
 sock = Sock(app)
 
 db.init_app(app)
-migrate = Migrate(app, db)
+migrate = Migrate(app, db, render_as_batch=True)
 
 FRONTEND = r"https?://" + socket.gethostname() + ":3000"
 CORS(app, resources={r"/api/*": {"origins": FRONTEND}})
@@ -89,22 +89,7 @@ def register():
 @app.route("/api/albums/", methods=["GET"])
 def albums():
     app.logger.debug("albums")
-    return {
-        "albums": [
-            {
-                "name": "Whatever",
-                "artist": "The Foos",
-            },
-            {
-                "name": "Something Else",
-                "artist": "The Bars",
-            },
-            {
-                "name": "Sgt Peppers",
-                "artist": "The Beatles",
-            },
-        ]
-    }
+    return jsonify(Album.query.all())
 
 
 @sock.route("/api/playback/status/")
