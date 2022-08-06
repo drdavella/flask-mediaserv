@@ -3,7 +3,7 @@ from os import environ, listdir
 import socket
 from time import sleep
 
-from flask import Flask, jsonify, request
+from flask import Flask, request
 from flask_cors import CORS
 from flask_sock import Sock
 
@@ -12,7 +12,7 @@ from sqlalchemy_utils import EmailType, PasswordType
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .models import Album, Track, db
+from .models import db
 from .blueprints.api import api
 
 if False:
@@ -84,29 +84,6 @@ def register():
     db.session.add(user)
     db.session.commit()
     return {"success": True, "message": "User created"}
-
-
-@app.route("/api/albums", methods=["GET"])
-def albums():
-    app.logger.debug("all albums")
-    return jsonify(Album.query.all())
-
-
-@app.route("/api/albums/<album_id>", methods=["GET"])
-def one_album(album_id):
-    app.logger.debug("album by id: %s", album_id)
-    return jsonify(Album.query.get(album_id))
-
-
-@app.route("/api/albums/<album_id>/tracks", methods=["GET"])
-def album_tracks(album_id):
-    app.logger.debug("album tracks by id: %s", album_id)
-    return jsonify(
-        Track.query.filter(Track.album_id == album_id)
-        .order_by(Track.disc_number)
-        .order_by(Track.track_number)
-        .all()
-    )
 
 
 @sock.route("/api/playback/status/")

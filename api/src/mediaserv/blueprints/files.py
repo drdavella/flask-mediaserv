@@ -8,7 +8,7 @@ from ..mediaserv.scanner import start_scan_directory
 files = Blueprint("files", __name__, url_prefix="/files")
 
 
-@files.route("/", methods=["GET"])
+@files.route("", methods=["GET"])
 def get_files():
     # TODO: use pathlib.Path here
     data_path = current_app.config.get("DATA_PATH")
