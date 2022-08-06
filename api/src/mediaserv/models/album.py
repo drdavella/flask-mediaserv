@@ -5,7 +5,7 @@ from .db import db
 
 @dataclass
 class Album(db.Model):
-    id: str
+    id: int
     name: str
     num_discs: int
     year: str

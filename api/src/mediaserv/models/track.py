@@ -1,7 +1,16 @@
+from dataclasses import dataclass
+
 from .db import db
 
 
+@dataclass
 class Track(db.Model):
+    id: int
+    title: str
+    disc_number: int
+    track_number: int
+    encoding: str
+
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     uri = db.Column(db.String, nullable=False)
