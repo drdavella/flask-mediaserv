@@ -1,6 +1,5 @@
-import os
-from os import environ, listdir
 import socket
+from os import environ
 from time import sleep
 
 from flask import Flask, request
@@ -8,9 +7,6 @@ from flask_cors import CORS
 from flask_sock import Sock
 
 from flask_migrate import Migrate
-from sqlalchemy_utils import EmailType, PasswordType
-
-from werkzeug.security import check_password_hash, generate_password_hash
 
 from .models import db
 from .blueprints.api import api
@@ -38,52 +34,6 @@ CORS(app, resources={r"/api/*": {"origins": FRONTEND}})
 
 
 app.register_blueprint(api)
-
-
-@app.route("/api/search/<term>", methods=["GET"])
-def search(term):
-    app.logger.debug("search term: %s", term)
-    return {"results": "", "search": term}
-
-
-@app.route("/api/login/", methods=["POST"])
-def login():
-    username = request.json.get("username")
-    password = request.json.get("password")
-
-    app.logger.debug(f"login attempt: username={username}")
-
-    user = User.query.filter_by(username=username).first()
-    if user is None:
-        app.logger.debug(f"login failed: unknown user")
-        return {"success": False, "message": "Invalid login"}, 401
-
-    if not user.check_password(password):
-        app.logger.debug(f"login failed: invalid password")
-        return {"success": False, "message": "Invalid login"}, 401
-
-    app.logger.debug(f"login success")
-    return {"success": True, "message": "Logged in"}
-
-
-@app.route("/api/register/", methods=["POST"])
-def register():
-    username = request.json.get("username")
-    email = request.json.get("email")
-    password = request.json.get("password")
-
-    user = User.query.filter_by(username=username).first()
-    if user is not None:
-        app.logger.debug(f"attempted register, username exists: username={username}")
-        return {"success": False, "message": "User already exists"}
-
-    app.logger.debug(f"register: username={username}, email={email}")
-
-    user = User(username=username, email=email)
-    user.set_password(password)
-    db.session.add(user)
-    db.session.commit()
-    return {"success": True, "message": "User created"}
 
 
 @sock.route("/api/playback/status/")
