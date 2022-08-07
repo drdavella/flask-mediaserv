@@ -11,16 +11,10 @@ from flask_migrate import Migrate
 from .models import db
 from .blueprints.api import api
 
-if False:
-    # For MySQL
-    db_username = environ.get("DB_USERNAME", "development-only")
-    db_password = environ.get("DB_PASSWORD", "development-only")
-    db_uri = f"postgresql://{db_username}:{db_password}@postgres/momento-api"
-else:
-    db_uri = "sqlite:////var/lib/sqlite/data/mediaserv.db"
+DB_URI = "sqlite:////var/lib/sqlite/data/mediaserv.db"
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
+app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["DATA_PATH"] = environ.get("MEDIASERV_DATA_PATH", "/data/music")
 
