@@ -45,4 +45,10 @@ def album_tracks(album_id):
 @albums.route("/<album_id>/image", methods=["GET"])
 def album_image(album_id):
     album = Album.query.get(album_id)
-    return {"image_uri": album.album_image.locate()}
+
+    try:
+        uri = album.album_image.locate()
+    except IOError:
+        uri = ""
+
+    return {"image_uri": uri}

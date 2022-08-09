@@ -20,15 +20,17 @@ def run_scan(directory: Path, job_id: str, current_app):
     albums = defaultdict(list)
     image_files = defaultdict(list)
     image_blobs = {}
+    album_images = {}
 
     # TODO: this loop can be parallelized
     for filename in directory.rglob("*"):
         if os.path.isdir(filename):
             continue
 
+        dirname = os.path.dirname(filename)
         if filename.suffix in IMAGE_EXTENSIONS:
             current_app.logger.debug("Detected image file: %s", filename)
-            image_files[directory].append(filename)
+            image_files[dirname].append(filename)
             continue
 
         if filename.suffix in IGNORE_EXTENSIONS:
@@ -45,6 +47,8 @@ def run_scan(directory: Path, job_id: str, current_app):
             albums[album_name].append((filename, meta))
             if not album_name in image_blobs and meta.pictures:
                 image_blobs[album_name] = meta.pictures[0]
+            if not album_name in album_images and dirname in image_files:
+                album_images[album_name] = image_files[dirname]
 
     for album_name, tracks in albums.items():
         current_app.logger.debug('album: %s', album_name)
@@ -70,9 +74,12 @@ def run_scan(directory: Path, job_id: str, current_app):
         album.num_discs = len(album_discs)
 
         with store_context(current_app.image_store):
-            # TODO: handle album art files also
+            # TODO: generate thumbnails
             if album_name in image_blobs:
                 album.album_image.from_blob(image_blobs[album_name].data)
+            elif album_name in album_images and album_images[album_name]:
+                with open(album_images[album_name][0], 'rb') as fh:
+                    album.album_image.from_file(fh)
             else:
                 current_app.logger.warn("No album art found for: \"%s\"", album_name)
 
