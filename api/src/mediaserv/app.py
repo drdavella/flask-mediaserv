@@ -7,16 +7,24 @@ from flask_cors import CORS
 from flask_sock import Sock
 
 from flask_migrate import Migrate
+from sqlalchemy_imageattach.stores.fs import HttpExposedFileSystemStore
 
 from .models import db
 from .blueprints.api import api
 
-DB_URI = "sqlite:////var/lib/sqlite/data/mediaserv.db"
+APP_NAME = "mediaserv"
+DB_URI = f"sqlite:////var/lib/sqlite/data/{APP_NAME}.db"
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = DB_URI
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["DATA_PATH"] = environ.get("MEDIASERV_DATA_PATH", "/data/music")
+
+app.image_store = HttpExposedFileSystemStore(
+    path=f"/var/local/{APP_NAME}/images",
+    prefix="static/images/",
+)
+app.wsgi_app = app.image_store.wsgi_middleware(app.wsgi_app)
 
 sock = Sock(app)
 

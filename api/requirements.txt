@@ -8,3 +8,4 @@ passlib==1.7.2
 flask-sock==0.5.2
 audio-metadata==0.11.1
 shortuuid==1.0.9
+SQLAlchemy-ImageAttach==1.1.0

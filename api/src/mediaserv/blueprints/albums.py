@@ -2,10 +2,21 @@ import os
 from pathlib import Path
 
 from flask import Blueprint, current_app, jsonify, request
+from sqlalchemy_imageattach.context import pop_store_context, push_store_context
 
 from ..models import Album, Track
 
 albums = Blueprint("albums", __name__, url_prefix="/albums")
+
+
+@albums.before_request
+def before_request():
+    push_store_context(current_app.image_store)
+
+
+@albums.teardown_request
+def teardown_request(exception=None):
+    pop_store_context()
 
 
 @albums.route("", methods=["GET"])
@@ -29,3 +40,9 @@ def album_tracks(album_id):
         .order_by(Track.track_number)
         .all()
     )
+
+
+@albums.route("/<album_id>/image", methods=["GET"])
+def album_image(album_id):
+    album = Album.query.get(album_id)
+    return {"image_uri": album.album_image.locate()}

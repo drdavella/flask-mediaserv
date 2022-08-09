@@ -13,6 +13,7 @@ services:
         touch setup.cfg
         pip install -e .
         rm -f setup.cfg
+        pip install -r requirements.txt
         flask run --host=0.0.0.0
 
     environment:
@@ -27,6 +28,7 @@ services:
       - ./api/:/home/flask/app/api
       - ${MEDIASERV_DATA_PATH}:/data/music
       - ./sqlite-db:/var/lib/sqlite/data
+      - ./images:/var/local/mediaserv/images
 
   ui-dev:
     build: ./ui

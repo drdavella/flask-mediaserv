@@ -5,6 +5,7 @@ from threading import Thread
 
 import audio_metadata as am
 from flask import current_app, copy_current_request_context
+from sqlalchemy_imageattach.context import store_context
 
 from ..models import Album, Artist, Track, Scan, db
 
@@ -17,7 +18,8 @@ def run_scan(directory: Path, job_id: str, current_app):
     current_app.logger.debug("beginning path: %s (job_id=%s)", directory, job_id)
 
     albums = defaultdict(list)
-    images = defaultdict(list)
+    image_files = defaultdict(list)
+    image_blobs = {}
 
     # TODO: this loop can be parallelized
     for filename in directory.rglob("*"):
@@ -26,7 +28,7 @@ def run_scan(directory: Path, job_id: str, current_app):
 
         if filename.suffix in IMAGE_EXTENSIONS:
             current_app.logger.debug("Detected image file: %s", filename)
-            images[directory].append(filename)
+            image_files[directory].append(filename)
             continue
 
         if filename.suffix in IGNORE_EXTENSIONS:
@@ -41,6 +43,8 @@ def run_scan(directory: Path, job_id: str, current_app):
 
         if album_name := meta.tags.album[0]:
             albums[album_name].append((filename, meta))
+            if not album_name in image_blobs and meta.pictures:
+                image_blobs[album_name] = meta.pictures[0]
 
     for album_name, tracks in albums.items():
         current_app.logger.debug('album: %s', album_name)
@@ -64,7 +68,16 @@ def run_scan(directory: Path, job_id: str, current_app):
             track = Track(album=album, **track_meta)
             db.session.add(track)
         album.num_discs = len(album_discs)
-        db.session.commit()
+
+        with store_context(current_app.image_store):
+            # TODO: handle album art files also
+            if album_name in image_blobs:
+                album.album_image.from_blob(image_blobs[album_name].data)
+            else:
+                current_app.logger.warn("No album art found for: \"%s\"", album_name)
+
+            # Needs to occur within storage context
+            db.session.commit()
 
     Scan.mark_finished(job_id)
     current_app.logger.info("Scan complete: %s (job_id=%s)", directory, job_id)
