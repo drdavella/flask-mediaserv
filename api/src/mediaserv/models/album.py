@@ -16,6 +16,7 @@ class Album(db.Model):
     name: str
     num_discs: int
     year: str
+    image_uri: str
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, nullable=False)
@@ -31,3 +32,10 @@ class Album(db.Model):
 
     added_on = db.Column(db.DateTime, default=db.func.now())
     updated_on = db.Column(db.DateTime, default=db.func.now(), onupdate=db.func.now())
+
+    @property
+    def image_uri(self):
+        try:
+            return self.album_image.locate()
+        except IOError:
+            return ""
